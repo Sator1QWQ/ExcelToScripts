@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExportTool.cs" />
+    <Compile Include="ExportWriter\CSharpWriter.cs" />
     <Compile Include="ExportWriter\ExportWriter.cs" />
     <Compile Include="ExportWriter\LuaWriter.cs" />
     <Compile Include="PathConfig.cs" />

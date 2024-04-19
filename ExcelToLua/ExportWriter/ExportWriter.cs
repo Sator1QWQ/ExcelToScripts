@@ -56,7 +56,7 @@ namespace ExcelToLua
         /// <param name="sheet"></param>
         /// <param name="db"></param>
         /// <returns>转换后的字符串</returns>
-        public virtual string OnReadSheetStart(ExcelWorksheet sheet, string db) => db;
+        public virtual string OnReadSheetStart(ExcelWorksheet sheet, string db, string tab) => db;
 
         /// <summary>
         /// 每个sheet读取结束时

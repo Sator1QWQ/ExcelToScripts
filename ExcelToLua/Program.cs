@@ -52,8 +52,9 @@ namespace ExcelToLua
 
                         Dictionary<string, string> textDic = new Dictionary<string, string>();
                         int count = sheet.Dimension.Rows;
-                        string dbTable = sheet.Name + " = {\n";
+                        string dbTable = "";
                         string tab = "	";
+                        dbTable = exportWriter.OnReadSheetStart(sheet, dbTable, tab);
 
                         //从第4行开始，前面3行是注释行
                         //这里的索引是从1开始，与Excel可以保持一致
