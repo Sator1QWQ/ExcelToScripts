@@ -11,9 +11,16 @@ namespace ExcelToLua
     abstract class ExportWriter
     {
         /// <summary>
+        /// 是否只读取一行数据
+        /// </summary>
+        public abstract bool IsReadOnce { get; }
+
+        /// <summary>
         /// 导出路径
         /// </summary>
         public abstract string ExportPath { get; }
+
+        public abstract string ValueTab { get; }
 
         /// <summary>
         /// 每行excel数据转换成代码

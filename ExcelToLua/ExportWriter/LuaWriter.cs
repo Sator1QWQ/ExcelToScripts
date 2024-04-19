@@ -16,6 +16,10 @@ namespace ExcelToLua
         public override string ExportPath => PathConfig.LuaOutputPath;
         public string TextExportPath => PathConfig.LuaTextOutputPath;
 
+        public override bool IsReadOnce => false;
+
+        public override string ValueTab => "	";
+
         public override string OnReadRowStart(string id, string db, string tab)
         {
             db = db + tab + "[" + id + "] = {\n";
@@ -28,7 +32,7 @@ namespace ExcelToLua
             return db;
         }
 
-        public override string OnReadSheetStart(ExcelWorksheet sheet, string db)
+        public override string OnReadSheetStart(ExcelWorksheet sheet, string db, string tab)
         {
             db = db + sheet.Name + " = {\n";
             return db;
@@ -72,7 +76,7 @@ namespace ExcelToLua
 
         public override string ToScript(string sheetName, int row, string db, string name, string value, string type, string tab)
         {
-            if (type.Equals("number"))
+            if (type.Equals("int") || type.Equals("float") || type.Contains("enum"))
             {
                 db = db + tab + name + " = " + value + ",\n";
             }
@@ -93,7 +97,7 @@ namespace ExcelToLua
             {
                 db = db + tab + name + " = " + sheetName + "_Text." + name + "_" + row.ToString() + ",\n";
             }
-            else if (type.Equals("array"))
+            else if (type.Contains("array"))
             {
                 string[] arr = null;
                 if (string.IsNullOrEmpty(value))
