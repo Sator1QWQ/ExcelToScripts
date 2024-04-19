@@ -28,6 +28,12 @@ namespace ExcelToLua
             return db;
         }
 
+        public override string OnReadSheetStart(ExcelWorksheet sheet, string db)
+        {
+            db = db + sheet.Name + " = {\n";
+            return db;
+        }
+
         public override string OnReadSheetEnd(ExcelWorksheet sheet, string db, string tab)
         {
             db = db + "}\n";

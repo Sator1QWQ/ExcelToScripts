@@ -51,6 +51,14 @@ namespace ExcelToLua
         public virtual string OnReadRowEnd(string db, string tab) => db;
 
         /// <summary>
+        /// 每个sheet刚读取时
+        /// </summary>
+        /// <param name="sheet"></param>
+        /// <param name="db"></param>
+        /// <returns>转换后的字符串</returns>
+        public virtual string OnReadSheetStart(ExcelWorksheet sheet, string db) => db;
+
+        /// <summary>
         /// 每个sheet读取结束时
         /// </summary>
         /// <param name="db"></param>
