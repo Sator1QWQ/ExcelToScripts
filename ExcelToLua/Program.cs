@@ -9,10 +9,18 @@ namespace ExcelToLua
 {
     class Program
     {
+        private static List<ExportWriter> writerList = new List<ExportWriter>();
+
         static void Main(string[] args)
         {
+            InitWriter();
             ReadExcel();
             Console.Read();
+        }
+
+        private static void InitWriter()
+        {
+            writerList.Add(new LuaWriter());
         }
 
         private static void ReadExcel()
@@ -21,90 +29,67 @@ namespace ExcelToLua
             string[] files = Directory.GetFiles(PathConfig.ExcelPath, "*.xlsx", SearchOption.AllDirectories);
             for (int i = 0; i < files.Length; i++)
             {
-                string file = files[i];
-
-                //正在运行的excel
-                if (file.IndexOf("~$") != -1)
+                for(int writerIndex = 0; writerIndex < writerList.Count; writerIndex++)
                 {
-                    continue;
-                }
+                    ExportWriter exportWriter = writerList[writerIndex];
+                    string file = files[i];
 
-                ExcelPackage package = new ExcelPackage(file);
-                ExcelWorksheets sheets = package.Workbook.Worksheets;
-                foreach (ExcelWorksheet sheet in sheets)
-                {
-                    if (sheet.Dimension == null)
+                    //正在运行的excel
+                    if (file.IndexOf("~$") != -1)
                     {
-                        Console.WriteLine("存在为空的表！file==" + file + ", sheet==" + sheet.Name);
                         continue;
                     }
 
-                    Dictionary<string, string> textDic = new Dictionary<string, string>();
-                    int count = sheet.Dimension.Rows;
-                    string dbTable = sheet.Name + " = {\n";
-                    string tab = "	";
-
-                    //从第4行开始，前面3行是注释行
-                    //这里的索引是从1开始，与Excel可以保持一致
-                    for (int row = PathConfig.UnExportRow + 1; row <= sheet.Dimension.Rows; row++)
+                    ExcelPackage package = new ExcelPackage(file);
+                    ExcelWorksheets sheets = package.Workbook.Worksheets;
+                    foreach (ExcelWorksheet sheet in sheets)
                     {
-                        string id = sheet.Cells[row, 1].Value.ToString();
-                        dbTable = dbTable + tab + "[" + id + "] = {\n";
-
-                        for (int col = 1; col <= sheet.Dimension.Columns; col++)
+                        if (sheet.Dimension == null)
                         {
-                            string nowCell = ((char)(col + 64)).ToString() + row;
-
-                            //存在#则不转换这一列
-                            if (sheet.Cells[1, col].Value == null || sheet.Cells[1, col].Value.ToString().IndexOf("#") != -1)
-                            {
-                                continue;
-                            }
-
-                            string cellName = sheet.Cells[2, col].Value.ToString();
-                            string cellType = sheet.Cells[3, col].Value.ToString();
-                            ExcelRange range = sheet.Cells[row, col];
-                            string cellValue = range.Value == null ? "" : range.Value.ToString();
-                            dbTable = ToLua(sheet.Name, row, dbTable, cellName, cellValue, cellType, tab + tab);
-
-                            if(cellType.Equals("string"))
-                            {
-                                textDic.Add(cellName + "_" + row.ToString(), cellValue);
-                            }
+                            Console.WriteLine("存在为空的表！file==" + file + ", sheet==" + sheet.Name);
+                            continue;
                         }
 
-                        dbTable = dbTable + tab + "},\n";
-                    }
+                        Dictionary<string, string> textDic = new Dictionary<string, string>();
+                        int count = sheet.Dimension.Rows;
+                        string dbTable = sheet.Name + " = {\n";
+                        string tab = "	";
 
-                    dbTable = dbTable + "}\n";
-                    dbTable = dbTable + sheet.Name + ".Count = " + (sheet.Dimension.Rows - PathConfig.UnExportRow);
+                        //从第4行开始，前面3行是注释行
+                        //这里的索引是从1开始，与Excel可以保持一致
+                        for (int row = PathConfig.UnExportRow + 1; row <= sheet.Dimension.Rows; row++)
+                        {
+                            string id = sheet.Cells[row, 1].Value.ToString();
+                            dbTable = exportWriter.OnReadRowStart(id, dbTable, tab);
 
-                    string textName = sheet.Name + "_Text";
-                    string outputFile = PathConfig.OutputPath + "\\" + sheet.Name + ".lua";
-                    if (File.Exists(outputFile))
-                    {
-                        File.Delete(outputFile);
-                    }
-                    StreamWriter stream = new StreamWriter(outputFile);
-                    stream.WriteLine($"require \"{PathConfig.TextRequireDirectory}.{textName}\"");
-                    stream.Write(dbTable);
-                    stream.Dispose();
+                            for (int col = 1; col <= sheet.Dimension.Columns; col++)
+                            {
+                                string nowCell = ((char)(col + 64)).ToString() + row;
 
-                    //文本单独创建一个文件
-                    string outputTextFile = PathConfig.OutputTextPath + "\\" + textName + ".lua";
-                    if(File.Exists(outputTextFile))
-                    {
-                        File.Delete(outputTextFile);
-                    }
-                    StreamWriter textStream = new StreamWriter(outputTextFile);
-                    textStream.WriteLine(textName + " = {}");
-                    foreach(KeyValuePair<string, string> pair in textDic)
-                    {
-                        textStream.WriteLine($"{textName}.{pair.Key} = \"{pair.Value}\"");
-                    }
-                    textStream.Dispose();
+                                //存在#则不转换这一列
+                                if (sheet.Cells[1, col].Value == null || sheet.Cells[1, col].Value.ToString().IndexOf("#") != -1)
+                                {
+                                    continue;
+                                }
 
-                    Console.WriteLine("[" + sheet.Name + "]导出成功");
+                                string cellName = sheet.Cells[2, col].Value.ToString();
+                                string cellType = sheet.Cells[3, col].Value.ToString();
+                                ExcelRange range = sheet.Cells[row, col];
+                                string cellValue = range.Value == null ? "" : range.Value.ToString();
+                                dbTable = ToLua(sheet.Name, row, dbTable, cellName, cellValue, cellType, tab + tab);
+
+                                if (cellType.Equals("string"))
+                                {
+                                    textDic.Add(cellName + "_" + row.ToString(), cellValue);
+                                }
+                            }
+                            dbTable = exportWriter.OnReadRowEnd(dbTable, tab);
+                        }
+
+                        dbTable = exportWriter.OnReadSheetEnd(sheet, dbTable, tab);
+                        exportWriter.Export(sheet.Name, dbTable, textDic);
+                        Console.WriteLine("[" + sheet.Name + "]导出成功");
+                    }
                 }
             }
         }
@@ -142,7 +127,7 @@ namespace ExcelToLua
                 }
                 else
                 {
-                    arr = SplitArray(value);
+                    arr = ExportTool.SplitArray(value);
                 }
                 string nextTab = tab + "	";
                 db = db + tab + name + " = {\n";
@@ -162,90 +147,6 @@ namespace ExcelToLua
             return db;
         }
 
-        //arr为[2,[5,6],8]这种格式的
-        private static string[] SplitArray(string arr)
-        {
-            int startIndex = 1;
-            int count = (arr.Length - 1) - startIndex;
-            string arr2 = arr.Substring(startIndex, count); //2,[[5],[6]],8     //111,231,532,666
-            List<string> split = new List<string>();
-
-            int index = 0;
-            while(index < arr2.Length)
-            {
-                int removeCount = 0;
-
-                //都是从0截取的，index代表的也是数量
-                if (arr2[index] == ',')
-                {
-                    split.Add(arr2.Substring(0, index));
-                    removeCount = index + 1;
-                }
-                else if (arr2[index] == '[') //遇到[的时候，index只会是0
-                {
-                    int rightIndex = GetRightIndex(arr2, index);
-                    split.Add(arr2.Substring(0, rightIndex + 1));
-                    removeCount = rightIndex + 1;
-                    
-                    //]不是最后一个位置，则需要多移除一个，为了移除]后的逗号
-                    if(rightIndex < arr2.Length - 1)
-                    {
-                        removeCount++;
-                    }
-                }
-
-                if (removeCount > 0)
-                {
-                    arr2 = arr2.Remove(0, removeCount);
-                    index = 0;
-                }
-                else
-                {
-                    index++;
-
-                    //最后一个数
-                    if(index == arr2.Length)
-                    {
-                        split.Add(arr2.Substring(0, arr2.Length));
-                        break;
-                    }
-                }
-            }
-
-            return split.ToArray();
-        }
-
-        /// <summary>
-        /// 获取右括号的索引
-        /// </summary>
-        /// <param name="str">字符串</param>
-        /// <param name="leftIndex">左括号索引</param>
-        /// <returns></returns>
-        private static int GetRightIndex(string str, int leftIndex)
-        {
-            //[[[2],5],[6]]
-
-            Stack<int> stack = new Stack<int>();
-            for(int i = leftIndex; i < str.Length; i++)
-            {
-                char c = str[i];
-                if (c == '[')
-                {
-                    stack.Push(i);
-                }
-                else if(c == ']')
-                {
-                    stack.Pop();
-                    //栈空时，匹配完成
-                    if (stack.Count == 0)
-                    {
-                        return i;
-                    }
-                }
-            }
-
-            //括号不匹配
-            return -1;
-        }
+        
     }
 }
