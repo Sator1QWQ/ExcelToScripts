@@ -78,7 +78,14 @@ namespace ExcelToLua
         {
             if (type.Equals("int") || type.Equals("float") || type.Contains("enum"))
             {
-                db = db + tab + name + " = " + value + ",\n";
+                if(!string.IsNullOrEmpty(value))
+                {
+                    db = db + tab + name + " = " + value + ",\n";
+                }
+                else
+                {
+                    db = db + tab + name + " = nil,\n";
+                }
             }
             else if (type.Equals("bool"))
             {
@@ -91,7 +98,15 @@ namespace ExcelToLua
                 {
                     newValue = "false";
                 }
-                db = db + tab + name + " = " + newValue + ",\n";
+                
+                if(!string.IsNullOrEmpty(value))
+                {
+                    db = db + tab + name + " = " + newValue + ",\n";
+                }
+                else
+                {
+                    db = db + tab + name + " = nil,\n";
+                }
             }
             else if (type.Equals("string"))
             {
