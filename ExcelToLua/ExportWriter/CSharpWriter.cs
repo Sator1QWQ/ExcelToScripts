@@ -60,12 +60,17 @@ namespace ExcelToLua
                 string enumType = v.Substring(1, v.Length - 2);    //去掉尖括号,剩下EType
                 db = db + tab + enumType + " " + name + getset;
             }
+            else if(type.Contains("object"))
+            {
+                db = db + tab + "object " + name + getset;
+            }
             return db;
         }
 
         public override string OnReadSheetStart(ExcelWorksheet sheet, string db, string tab)
         {
             db = db + 
+                "/***********************代码由工具生成***********************/\n" +
                 "using System.Collections.Generic;\n" +
                 "using XLua;\n" +
                 "\n" +

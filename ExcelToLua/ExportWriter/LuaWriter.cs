@@ -34,7 +34,9 @@ namespace ExcelToLua
 
         public override string OnReadSheetStart(ExcelWorksheet sheet, string db, string tab)
         {
-            db = db + sheet.Name + " = {\n";
+            db = db +
+                "--***********************代码由工具生成***********************--\n" +
+                sheet.Name + " = {\n";
             return db;
         }
 
@@ -76,7 +78,7 @@ namespace ExcelToLua
 
         public override string ToScript(string sheetName, int row, string db, string name, string value, string type, string tab)
         {
-            if (type.Equals("int") || type.Equals("float") || type.Contains("enum"))
+            if (type.Equals("int") || type.Equals("float") || type.Contains("enum") || type.Contains("object"))
             {
                 if(!string.IsNullOrEmpty(value))
                 {
