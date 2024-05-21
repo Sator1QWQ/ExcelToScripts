@@ -78,7 +78,7 @@ namespace ExcelToLua
 
         public override string ToScript(string sheetName, int row, string db, string name, string value, string type, string tab)
         {
-            if (type.Equals("int") || type.Equals("float") || type.Contains("enum") || type.Contains("object"))
+            if (type.Equals("int") || type.Equals("float") || type.Equals("object") || type.Contains("enum"))
             {
                 if(!string.IsNullOrEmpty(value))
                 {
